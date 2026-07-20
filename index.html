@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journal UI Konfigurator – Pupil AG</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --teal: #185FA5;
+  --teal-light: #E6F1FB;
+  --teal-dark: #0F3E6E;
+  --blue: #185FA5;
+  --blue-light: #daeaf8;
+  --gray-50: #F7F7F6;
+  --gray-100: #EFEFED;
+  --gray-200: #D3D1C7;
+  --gray-400: #888780;
+  --gray-600: #5F5E5A;
+  --gray-800: #2C2C2A;
+  --white: #FFFFFF;
+  --radius: 8px;
+  --border: 1px solid #E0DED8;
+  --border-strong: 1px solid #BBBBBB;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── TOP BAR (Pupil nav mimic) ── */
+.topbar {
+  background: #185FA5;
+  color: white;
+  padding: 0 24px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-logo {
+  width: 28px; height: 28px;
+  background: white;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--teal-dark);
+  font-weight: 700;
+  font-size: 13px;
+}
+.topbar-title { opacity: 0.92; }
+
+/* ── WIZARD SHELL ── */
+.page-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+/* ── STEP INDICATOR ── */
+.wizard-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 32px;
+}
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: default;
+  flex: 1;
+}
+.step-item:last-child { flex: none; }
+.step-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  color: var(--gray-600);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 500;
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+.step-item.active .step-num {
+  background: var(--teal);
+  color: white;
+}
+.step-item.done .step-num {
+  background: var(--teal-light);
+  color: var(--teal-dark);
+}
+.step-label {
+  font-size: 13px;
+  color: var(--gray-600);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.step-item.active .step-label { color: var(--gray-800); font-weight: 500; }
+.step-connector {
+  flex: 1;
+  height: 1px;
+  background: var(--gray-200);
+  margin: 0 12px;
+}
+
+/* ── CARDS / PANELS ── */
+.card {
+  background: white;
+  border-radius: 12px;
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: visible;
+}
+.card-header {
+  padding: 20px 24px 16px;
+  border-bottom: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--gray-800);
+}
+.card-subtitle {
+  font-size: 13px;
+  color: var(--gray-600);
+  margin-top: 2px;
+}
+
+/* ── STEP PAGES ── */
+.step-page { display: none; }
+.step-page.active { display: block; }
+
+/* ── STEP 1: DRAG & DROP LAYOUT ── */
+.builder-layout {
+  display: flex;
+  gap: 16px;
+  padding: 20px 24px;
+  align-items: start;
+  min-width: 0;
+}
+.columns-area {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.columns-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+}
+.columns-row.scrollable {
+  min-width: max-content;
+  width: auto;
+}
+.tab-column {
+  flex: 1 1 0;
+  min-width: 160px;
+  background: var(--gray-50);
+  border: var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  min-height: 160px;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+}
+.tab-column.drag-over {
+  background: var(--teal-light);
+  border-color: var(--teal);
+}
+.tab-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 6px;
+}
+.tab-col-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.tab-col-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--teal-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tab-rename-btn {
+  font-size: 15px;
+  color: var(--gray-400);
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.tab-rename-btn:hover { background: var(--blue-light); border-color: #B5D4F4; color: var(--blue); }
+.tab-col-name-input {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--teal-dark);
+  background: white;
+  border: 1px solid var(--teal);
+  border-radius: 4px;
+  padding: 2px 6px;
+  width: 100%;
+  outline: none;
+  display: none;
+  margin-bottom: 6px;
+}
+.drop-zone {
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.drop-hint {
+  font-size: 12px;
+  color: var(--gray-400);
+  text-align: center;
+  padding: 16px 8px;
+  border: 1px dashed var(--gray-200);
+  border-radius: 6px;
+  display: none;
+}
+.drop-zone:empty + .drop-hint,
+.drop-zone.empty-hint .drop-hint { display: block; }
+
+.add-col-btn {
+  height: 100%;
+  min-height: 120px;
+  width: 44px;
+  flex-shrink: 0;
+  background: none;
+  border: 1px dashed var(--gray-200);
+  border-radius: var(--radius);
+  color: var(--gray-400);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  align-self: stretch;
+}
+.add-col-btn:hover {
+  background: var(--blue-light);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+.add-col-btn--disabled {
+  color: var(--gray-200);
+  border-color: var(--gray-100);
+  cursor: not-allowed;
+}
+.add-col-btn--disabled:hover {
+  background: none;
+  border-color: var(--gray-100);
+  color: var(--gray-200);
+}
+
+/* ── ELEMENT CHIPS ── */
+.elem-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  border: var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--gray-800);
+  cursor: grab;
+  transition: box-shadow 0.15s, border-color 0.15s, opacity 0.15s;
+  user-select: none;
+  box-shadow: var(--shadow-sm);
+}
+.elem-chip:hover { border-color: var(--gray-400); box-shadow: var(--shadow-md); }
+.elem-chip.dragging { opacity: 0.4; }
+.elem-chip .chip-icon {
+  width: 16px; height: 16px;
+  background: var(--teal-light);
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--teal-dark);
+}
+.elem-chip .chip-remove {
+  margin-left: auto;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: var(--gray-400);
+  font-size: 15px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.elem-chip .chip-remove:hover { color: #c0392b; background: #fdecea; border-color: #f5c6cb; }
+.elem-chip.locked {
+  background: var(--teal-light);
+  border-color: var(--teal);
+  cursor: default;
+}
+.elem-chip.locked .chip-icon {
+  background: var(--teal);
+  color: white;
+}
+.locked-badge {
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--teal-dark);
+  background: none;
+  border: 1px solid transparent;
+  padding: 3px 6px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+/* ── ELEMENT PALETTE ── */
+.palette-panel {
+  background: var(--gray-50);
+  border: var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  position: sticky;
+  top: 72px;
+  width: 210px;
+  flex-shrink: 0;
+}
+.palette-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 460px;
+  overflow-y: auto;
+}
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: white;
+  border: var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--gray-800);
+  cursor: grab;
+  transition: background 0.15s, border-color 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+.palette-item:hover { border-color: var(--teal); background: var(--teal-light); }
+.palette-item .pi-icon {
+  width: 16px; height: 16px;
+  background: var(--blue-light);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--blue);
+  flex-shrink: 0;
+}
+.palette-item.used {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── STEP 2: PREVIEW ── */
+.preview-wrap { padding: 20px 24px; }
+.preview-frame {
+  background: white;
+  border-radius: 10px;
+  border: var(--border);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+.preview-topbar {
+  background: #185FA5;
+  color: white;
+  padding: 12px 20px;
+  font-size: 18px;
+  font-weight: 500;
+}
+.preview-content { padding: 20px; }
+.preview-heading {
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--gray-800);
+  margin-bottom: 18px;
+}
+.preview-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--gray-100);
+  margin-bottom: 0;
+}
+.preview-tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  color: var(--gray-600);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.preview-tab.active {
+  color: var(--teal-dark);
+  border-bottom-color: var(--teal);
+  font-weight: 500;
+}
+.preview-tab-body {
+  padding: 20px 0;
+  display: none;
+}
+.preview-tab-body.active { display: block; }
+
+.preview-label {
+  font-size: 13px;
+  color: var(--gray-600);
+  text-align: right;
+  padding-right: 4px;
+}
+.preview-label.required { color: #c0392b; }
+.preview-input-mock {
+  height: 32px;
+  border: 1px solid #D0CEC8;
+  border-radius: 5px;
+  background: white;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--gray-400);
+  max-width: 340px;
+}
+.preview-input-mock.select::after {
+  content: '▾';
+  margin-left: auto;
+  font-size: 11px;
+}
+.preview-input-mock.filled {
+  color: var(--gray-800);
+}
+.preview-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.preview-radio {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--gray-800);
+}
+.preview-radio-dot {
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--gray-400);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.preview-radio-dot.checked { border-color: var(--teal); }
+.preview-radio-dot.checked::after {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+.preview-textarea-mock {
+  border: 1px solid #D0CEC8;
+  border-radius: 5px;
+  background: white;
+  height: 80px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--gray-400);
+}
+.preview-file-area {
+  border: 1px dashed #D0CEC8;
+  border-radius: 5px;
+  background: var(--gray-50);
+  height: 80px;
+  max-width: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--gray-400);
+}
+.preview-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.preview-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.preview-checkbox-box {
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--teal);
+  border-radius: 3px;
+  background: var(--teal);
+  display: flex; align-items: center; justify-content: center;
+  color: white;
+  font-size: 9px;
+}
+.preview-checkbox-box.unchecked {
+  background: white;
+  border-color: var(--gray-400);
+}
+.preview-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 300px;
+}
+.preview-slider {
+  flex: 1;
+  height: 4px;
+  background: var(--gray-200);
+  border-radius: 2px;
+  position: relative;
+}
+.preview-slider-thumb {
+  width: 14px; height: 14px;
+  background: var(--teal);
+  border-radius: 50%;
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-sm);
+}
+.preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: var(--border);
+}
+.preview-btn-ghost {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--gray-800);
+}
+.preview-btn-primary {
+  padding: 8px 20px;
+  background: var(--teal);
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  color: white;
+  font-weight: 500;
+}
+.preview-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+  align-items: start;
+}
+.preview-col-divider {
+  width: 1px;
+  background: var(--gray-100);
+  align-self: stretch;
+}
+.preview-field {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: start;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-top: 2px;
+}
+.preview-empty-tab {
+  padding: 32px;
+  text-align: center;
+  color: var(--gray-400);
+  font-size: 13px;
+  border: 1px dashed var(--gray-200);
+  border-radius: var(--radius);
+  margin-top: 16px;
+}
+
+/* ── STEP 3: ABSENDEN ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  padding: 24px;
+}
+.form-full { grid-column: 1 / -1; }
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.form-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-600);
+}
+.form-label .req { color: #c0392b; margin-left: 2px; }
+.form-input {
+  height: 36px;
+  border: 1px solid #D0CEC8;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--gray-800);
+  background: white;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus { border-color: var(--teal); }
+.form-textarea {
+  border: 1px solid #D0CEC8;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--gray-800);
+  background: white;
+  outline: none;
+  resize: vertical;
+  min-height: 90px;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+.form-textarea:focus { border-color: var(--teal); }
+.summary-box {
+  background: var(--gray-50);
+  border: var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 0 24px 8px;
+}
+.summary-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.summary-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.summary-tab-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.summary-tab-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--teal-dark);
+  min-width: 100px;
+}
+.summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.summary-chip {
+  font-size: 11px;
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* ── WIZARD NAV BUTTONS ── */
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+}
+.btn {
+  padding: 9px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-ghost {
+  background: white;
+  border: var(--border-strong);
+  color: var(--gray-800);
+}
+.btn-ghost:hover { background: var(--gray-100); }
+.btn-primary {
+  background: var(--teal);
+  border: none;
+  color: white;
+}
+.btn-primary:hover { background: var(--teal-dark); }
+.btn-primary:disabled {
+  background: var(--gray-200);
+  color: var(--gray-400);
+  cursor: not-allowed;
+}
+.btn-danger {
+  background: #c0392b;
+  border: none;
+  color: white;
+}
+.btn-danger:hover { background: #a93226; }
+
+/* ── SUCCESS STATE ── */
+.success-state {
+  text-align: center;
+  padding: 48px 24px;
+  display: none;
+}
+.success-icon {
+  width: 64px; height: 64px;
+  background: var(--teal-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 28px;
+  color: var(--teal-dark);
+}
+.success-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--gray-800);
+  margin-bottom: 8px;
+}
+.success-subtitle {
+  font-size: 14px;
+  color: var(--gray-600);
+}
+
+/* ── COLUMN DELETE ── */
+.tab-col-del {
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: var(--gray-400);
+  font-size: 15px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.tab-col-del:hover { color: #c0392b; background: #fdecea; border-color: #f5c6cb; }
+
+/* ── MISC ── */
+.info-banner {
+  background: var(--blue-light);
+  border: 1px solid #B5D4F4;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--blue);
+  margin: 0 24px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.info-banner strong { font-weight: 500; }
+
+/* Scrollable columns area */
+.columns-area::-webkit-scrollbar { height: 6px; }
+.columns-area::-webkit-scrollbar-track { background: var(--gray-100); border-radius: 3px; }
+.columns-area::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+.columns-area::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+
+.insert-indicator {
+  height: 2px;
+  background: var(--teal);
+  border-radius: 2px;
+  margin: 2px 0;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">P</div>
+  <span class="topbar-title">Journal UI Konfigurator</span>
+</div>
+
+<div class="page-wrap">
+
+  <!-- WIZARD STEPS -->
+  <div class="wizard-steps">
+    <div class="step-item active" id="step-ind-1">
+      <div class="step-num">1</div>
+      <span class="step-label">Intro</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" id="step-ind-2">
+      <div class="step-num">2</div>
+      <span class="step-label">Zusammenstellung</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" id="step-ind-3">
+      <div class="step-num">3</div>
+      <span class="step-label">Vorschau</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" id="step-ind-4">
+      <div class="step-num">4</div>
+      <span class="step-label">Absenden</span>
+    </div>
+  </div>
+
+  <!-- ════════════ STEP 1: INTRO ════════════ -->
+  <div class="step-page active" id="page-1">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Willkommen beim Journal UI Konfigurator</div>
+          <div class="card-subtitle">Schau dir das kurze Video an und erfahre wie der Konfigurator funktioniert.</div>
+        </div>
+      </div>
+      <div style="padding: 24px;">
+        <div style="position:relative; padding-top:56.25%; background:#000; border-radius:10px; overflow:hidden;">
+          <iframe
+            src="https://www.youtube.com/embed/qbnulIPojOk?rel=0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="position:absolute; inset:0; width:100%; height:100%; border:none;">
+          </iframe>
+        </div>
+      </div>
+    </div>
+    <div class="wizard-nav">
+      <span></span>
+      <button class="btn btn-primary" onclick="goToStep(3)">Weiter zur Zusammenstellung →</button>
+    </div>
+  </div>
+
+  <!-- ════════════ STEP 2: ZUSAMMENSTELLUNG ════════════ -->
+  <div class="step-page" id="page-4">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Tabs und Felder anordnen</div>
+          <div class="card-subtitle">Ziehe Felder aus der Palette in die Tab-Spalten — so wie sie im Journal-Modal erscheinen sollen.</div>
+        </div>
+      </div>
+
+      <div class="builder-layout">
+        <!-- COLUMNS AREA -->
+        <div class="columns-area">
+          <div class="columns-row" id="columns-row">
+            <!-- JS fügt Spalten ein -->
+          </div>
+          <!-- Add column btn is inside columns-row via JS -->
+        </div>
+
+        <!-- PALETTE -->
+        <div class="palette-panel">
+          <div class="palette-title">Verfügbare Felder</div>
+          <div class="palette-list" id="palette-list">
+            <!-- filled by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-nav">
+      <span style="font-size:12px; color:var(--gray-400)">Mindestens ein Feld muss platziert sein</span>
+      <button class="btn btn-primary" id="btn-to-preview" onclick="goToPreview()">Weiter zur Vorschau →</button>
+    </div>
+  </div>
+
+  <!-- ════════════ STEP 2: VORSCHAU ════════════ -->
+  <div class="step-page" id="page-3">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Vorschau</div>
+          <div class="card-subtitle">So würde das Journal-Eingabefenster aussehen.</div>
+        </div>
+      </div>
+      <div class="preview-wrap">
+        <div class="preview-frame">
+          <div class="preview-topbar">Journaleintrag</div>
+          <div class="preview-content">
+            <div class="preview-heading">Neuer Eintrag</div>
+            <div class="preview-tabs" id="preview-tabs"></div>
+            <div id="preview-bodies"></div>
+            <div class="preview-actions">
+              <div class="preview-btn-ghost">Zurück zur Übersicht</div>
+              <div class="preview-btn-ghost">Speichern und neuer Eintrag</div>
+              <div class="preview-btn-primary">Speichern und zurück zur Übersicht</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-nav">
+      <button class="btn btn-ghost" onclick="goToStep(3)">← Zurück</button>
+      <button class="btn btn-primary" onclick="goToStep(4)">Weiter zum Absenden →</button>
+    </div>
+  </div>
+
+  <!-- ════════════ STEP 3: ABSENDEN ════════════ -->
+  <div class="step-page" id="page-3">
+    <div class="card" id="send-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Vorschlag absenden</div>
+          <div class="card-subtitle">Deine Konfiguration wird an das Pupil-Produktteam gesendet.</div>
+        </div>
+      </div>
+
+      <div class="info-banner">
+        <span>ℹ️</span>
+        <span><strong>Zusammenfassung deiner Konfiguration</strong> — folgende Tab-Struktur hast du definiert:</span>
+      </div>
+
+      <div class="summary-box" id="summary-box"></div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Name <span class="req">*</span></label>
+          <input class="form-input" id="f-name" type="text" placeholder="Vor- und Nachname">
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-Mail <span class="req">*</span></label>
+          <input class="form-input" id="f-email" type="email" placeholder="name@schule.ch">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Schule / Kanton</label>
+          <input class="form-input" id="f-school" type="text" placeholder="z.B. Schule Musterhausen, Kanton SG">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rolle</label>
+          <input class="form-input" id="f-role" type="text" placeholder="z.B. Schulleitung, Klassenlehrperson">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Kommentar / Begründung</label>
+          <textarea class="form-textarea" id="f-comment" placeholder="Warum macht diese Anordnung für deinen Schulalltag Sinn?"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="card success-state" id="success-panel">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Vorschlag gesendet!</div>
+      <div class="success-subtitle">Vielen Dank. Das Pupil-Team prüft deinen Konfigurationsvorschlag.</div>
+    </div>
+
+    <div class="wizard-nav" id="step3-nav">
+      <button class="btn btn-ghost" onclick="goToStep(3)">← Zurück</button>
+      <button class="btn btn-primary" onclick="submitForm()">Vorschlag absenden ✓</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ELEMENTS = [
+  { id: 'semester', label: 'Semester', icon: '📅', type: 'select' },
+  { id: 'klasse', label: 'Klasse/Gruppe', icon: '🏫', type: 'select' },
+  { id: 'schueler', label: 'Schülerinnen/Schüler', icon: '👤', type: 'select' },
+  { id: 'datum', label: 'Datum', icon: '📆', type: 'date' },
+  { id: 'kategorie', label: 'Kategorie', icon: '🏷', type: 'select' },
+  { id: 'unterkategorie', label: 'Unterkategorie', icon: '🏷', type: 'select' },
+  { id: 'fach', label: 'Fach', icon: '📚', type: 'select' },
+  { id: 'status', label: 'Status', icon: '🔵', type: 'radio' },
+  { id: 'prioritaet', label: 'Priorität', icon: '⚡', type: 'radio' },
+  { id: 'sichtbarkeit', label: 'Sichtbarkeit', icon: '👁', type: 'checkbox' },
+  { id: 'benachrichtigung', label: 'Benachrichtigung per E-Mail', icon: '✉️', type: 'select' },
+  { id: 'datei', label: 'Datei', icon: '📎', type: 'file' },
+  { id: 'einschaetzungsplanung', label: 'Einschätzungsplanung', icon: '📋', type: 'select' },
+  { id: 'einschaetzung', label: 'Einschätzung', icon: '📊', type: 'select' },
+  { id: 'aspekt', label: 'Aspekt', icon: '🔍', type: 'select' },
+  { id: 'beobachtungspunkt', label: 'Beobachtungspunkt', icon: '📌', type: 'select' },
+  { id: 'oeff-notiz', label: 'Öffentliche Notiz', icon: '📝', type: 'textarea' },
+  { id: 'intern-notiz', label: 'Interne Notiz', icon: '🔒', type: 'textarea' },
+];
+
+const DEFAULT_TABS = ['Grunddaten', 'Überfachliche Beobachtung', 'Notizen'];
+const LOCKED_IDS = ['semester', 'klasse', 'schueler', 'datum'];
+
+let columns = DEFAULT_TABS.map((name, i) => ({
+  id: 'col-' + i,
+  name,
+  items: i === 0 ? [...LOCKED_IDS] : [],
+}));
+let draggedId = null;
+let dragSource = null;
+
+
+function getInsertIndex(zone, clientY) {
+  const chips = [...zone.querySelectorAll('.elem-chip:not(.insert-indicator)')];
+  for (let i = 0; i < chips.length; i++) {
+    const rect = chips[i].getBoundingClientRect();
+    if (clientY < rect.top + rect.height / 2) return i;
+  }
+  return chips.length;
+}
+
+function showInsertIndicator(zone, clientY) {
+  clearInsertIndicator(zone);
+  const idx = getInsertIndex(zone, clientY);
+  const chips = [...zone.querySelectorAll('.elem-chip')];
+  const ind = document.createElement('div');
+  ind.className = 'insert-indicator';
+  if (idx >= chips.length) {
+    zone.appendChild(ind);
+  } else {
+    zone.insertBefore(ind, chips[idx]);
+  }
+}
+
+function clearInsertIndicator(zone) {
+  if (!zone) return;
+  zone.querySelectorAll('.insert-indicator').forEach(el => el.remove());
+}
+
+
+
+function renderAll() {
+  renderColumns();
+  renderPalette();
+}
+
+function getUsedIds() {
+  return columns.flatMap(c => c.items);
+}
+
+function renderPalette() {
+  const used = getUsedIds();
+  const list = document.getElementById('palette-list');
+  list.innerHTML = '';
+  ELEMENTS.forEach(el => {
+    const isLocked = LOCKED_IDS.includes(el.id);
+    const isUsed = used.includes(el.id);
+    if (isUsed || isLocked) return;
+    const div = document.createElement('div');
+    div.className = 'palette-item';
+    div.draggable = true;
+    div.dataset.id = el.id;
+    div.innerHTML = `<div class="pi-icon">${el.icon}</div><span>${el.label}</span>`;
+    {
+      div.addEventListener('dragstart', e => {
+        draggedId = el.id;
+        dragSource = 'palette';
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      div.addEventListener('dragend', () => { draggedId = null; dragSource = null; });
+    }
+    list.appendChild(div);
+  });
+}
+
+function renderColumns() {
+  const row = document.getElementById('columns-row');
+  row.innerHTML = '';
+  columns.forEach(col => {
+    const colDiv = document.createElement('div');
+    colDiv.className = 'tab-column';
+    colDiv.dataset.colId = col.id;
+
+    const isFirst = columns[0].id === col.id;
+    colDiv.innerHTML = `
+      <div class="tab-col-header">
+        <span class="tab-col-name" id="name-${col.id}" ondblclick="startRename('${col.id}')">${escHtml(col.name)}</span>
+        <div class="tab-col-actions">
+          <button class="tab-rename-btn" onclick="startRename('${col.id}')" title="Tab umbenennen"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4L4 16v4"/><path d="m13.5 6.5 4 4"/></svg></button>
+          <button class="tab-col-del" onclick="removeColumn('${col.id}')" title="Tab entfernen" style="${isFirst ? 'display:none' : ''}"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>
+        </div>
+      </div>
+      <input class="tab-col-name-input" id="input-${col.id}" value="${escHtml(col.name)}"
+        onblur="finishRename('${col.id}')" onkeydown="if(event.key==='Enter')finishRename('${col.id}')">
+      <div class="drop-zone" id="zone-${col.id}"></div>
+      <div class="drop-hint">Felder hier hineinziehen</div>
+    `;
+
+    const zone = colDiv.querySelector('.drop-zone');
+    col.items.forEach(itemId => {
+      const el = ELEMENTS.find(e => e.id === itemId);
+      if (!el) return;
+      const chip = makeChip(el, col.id);
+      zone.appendChild(chip);
+    });
+
+    colDiv.addEventListener('dragover', e => {
+      e.preventDefault();
+      colDiv.classList.add('drag-over');
+      const zone = colDiv.querySelector('.drop-zone');
+      showInsertIndicator(zone, e.clientY);
+    });
+    colDiv.addEventListener('dragleave', e => {
+      if (!colDiv.contains(e.relatedTarget)) {
+        colDiv.classList.remove('drag-over');
+        clearInsertIndicator(colDiv.querySelector('.drop-zone'));
+      }
+    });
+    colDiv.addEventListener('drop', e => {
+      e.preventDefault();
+      colDiv.classList.remove('drag-over');
+      const zone = colDiv.querySelector('.drop-zone');
+      clearInsertIndicator(zone);
+      if (!draggedId) return;
+      const isFirstCol = columns[0].id === col.id;
+      if (LOCKED_IDS.includes(draggedId) && !isFirstCol) {
+        draggedId = null; dragSource = null;
+        return;
+      }
+      const insertIdx = getInsertIndex(zone, e.clientY);
+      const tgt = columns.find(c => c.id === col.id);
+      if (!tgt) return;
+      if (dragSource === 'chip' && dragSource_colId === col.id) {
+        const oldIdx = tgt.items.indexOf(draggedId);
+        if (oldIdx !== -1) {
+          tgt.items.splice(oldIdx, 1);
+          const newIdx = insertIdx > oldIdx ? insertIdx - 1 : insertIdx;
+          tgt.items.splice(newIdx, 0, draggedId);
+        }
+      } else {
+        if (dragSource === 'chip') {
+          const src = columns.find(c => c.id === dragSource_colId);
+          if (src) src.items = src.items.filter(i => i !== draggedId);
+        }
+        if (!tgt.items.includes(draggedId)) {
+          tgt.items.splice(insertIdx, 0, draggedId);
+        }
+      }
+      draggedId = null; dragSource = null;
+      renderAll();
+    });
+
+    row.appendChild(colDiv);
+  });
+
+  const atLimit = columns.length >= MAX_TABS;
+  if (columns.length > 4) {
+    row.classList.add('scrollable');
+  } else {
+    row.classList.remove('scrollable');
+  }
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-col-btn' + (atLimit ? ' add-col-btn--disabled' : '');
+  addBtn.title = atLimit ? 'Maximal 8 Tabs erlaubt' : 'Tab hinzufügen';
+  addBtn.innerHTML = atLimit ? '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg>' : '+';
+  addBtn.onclick = addColumn;
+  row.appendChild(addBtn);
+}
+
+let dragSource_colId = null;
+
+function makeChip(el, colId) {
+  const isLocked = LOCKED_IDS.includes(el.id);
+  const div = document.createElement('div');
+  div.className = 'elem-chip' + (isLocked ? ' locked' : '');
+  div.draggable = !isLocked;
+  div.dataset.id = el.id;
+  const action = isLocked
+    ? `<span class="locked-badge"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg></span>`
+    : `<button class="chip-remove" onclick="removeFromCol('${colId}','${el.id}')" title="Entfernen"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></button>`;
+  div.innerHTML = `<div class="chip-icon">${el.icon}</div><span>${el.label}</span>${action}`;
+  if (!isLocked) {
+    div.addEventListener('dragstart', e => {
+      draggedId = el.id;
+      dragSource = 'chip';
+      dragSource_colId = colId;
+      e.dataTransfer.effectAllowed = 'move';
+      div.classList.add('dragging');
+    });
+    div.addEventListener('dragend', () => {
+      div.classList.remove('dragging');
+      draggedId = null; dragSource = null; dragSource_colId = null;
+    });
+  }
+  return div;
+}
+
+const MAX_TABS = 8;
+
+function addColumn() {
+  if (columns.length >= MAX_TABS) {
+    showTabLimitMsg();
+    return;
+  }
+  const n = columns.length + 1;
+  columns.push({ id: 'col-' + Date.now(), name: 'Tab ' + n, items: [] });
+  renderAll();
+}
+
+function showTabLimitMsg() {
+  const existing = document.getElementById('tab-limit-msg');
+  if (existing) return;
+  const msg = document.createElement('div');
+  msg.id = 'tab-limit-msg';
+  msg.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F3E6E;color:white;padding:10px 20px;border-radius:8px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;display:flex;align-items:center;gap:10px;';
+  msg.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v1"/><path d="M11 12h1v4h1"/></svg> Maximal 8 Tabs erlaubt — bitte zuerst einen Tab löschen.';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3500);
+}
+
+function removeColumn(colId) {
+  const col = columns.find(c => c.id === colId);
+  if (!col) return;
+  if (columns.length <= 1) { alert('Es muss mindestens ein Tab vorhanden sein.'); return; }
+  columns = columns.filter(c => c.id !== colId);
+  renderAll();
+}
+
+function removeFromCol(colId, itemId) {
+  if (LOCKED_IDS.includes(itemId)) return;
+  const col = columns.find(c => c.id === colId);
+  if (col) col.items = col.items.filter(i => i !== itemId);
+  renderAll();
+}
+
+function startRename(colId) {
+  const nameSpan = document.getElementById('name-' + colId);
+  const input = document.getElementById('input-' + colId);
+  if (!nameSpan || !input) return;
+  nameSpan.style.display = 'none';
+  input.style.display = 'block';
+  input.focus();
+  input.select();
+}
+
+function finishRename(colId) {
+  const nameSpan = document.getElementById('name-' + colId);
+  const input = document.getElementById('input-' + colId);
+  if (!nameSpan || !input) return;
+  const col = columns.find(c => c.id === colId);
+  if (col) col.name = input.value.trim() || col.name;
+  nameSpan.textContent = col ? col.name : '';
+  nameSpan.style.display = '';
+  input.style.display = 'none';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function goToPreview() {
+  const totalItems = columns.reduce((a, c) => a + c.items.length, 0);
+  if (totalItems === 0) {
+    alert('Bitte platziere mindestens ein Feld in einem Tab.');
+    return;
+  }
+  buildPreview();
+  goToStep(3);
+}
+
+const FIELD_HEIGHT = { select: 1, date: 1, radio: 1, checkbox: 3, file: 3, textarea: 3 };
+
+function fieldWeight(el) {
+  return FIELD_HEIGHT[el.type] || 1;
+}
+
+function splitIntoTwoCols(items) {
+  const els = items.map(id => ELEMENTS.find(e => e.id === id)).filter(Boolean);
+  const total = els.reduce((s, e) => s + fieldWeight(e), 0);
+  let running = 0;
+  let splitIdx = els.length;
+  let bestDiff = Infinity;
+  for (let i = 0; i < els.length; i++) {
+    running += fieldWeight(els[i]);
+    const diff = Math.abs(running - (total - running));
+    if (diff < bestDiff) { bestDiff = diff; splitIdx = i + 1; }
+    else break;
+  }
+  return [els.slice(0, splitIdx), els.slice(splitIdx)];
+}
+
+function buildPreview() {
+  const tabsDiv = document.getElementById('preview-tabs');
+  const bodiesDiv = document.getElementById('preview-bodies');
+  tabsDiv.innerHTML = '';
+  bodiesDiv.innerHTML = '';
+
+  columns.forEach((col, idx) => {
+    const tabEl = document.createElement('div');
+    tabEl.className = 'preview-tab' + (idx === 0 ? ' active' : '');
+    tabEl.textContent = col.name;
+    tabEl.onclick = () => switchPreviewTab(idx);
+    tabsDiv.appendChild(tabEl);
+
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'preview-tab-body' + (idx === 0 ? ' active' : '');
+    bodyEl.id = 'ptb-' + idx;
+
+    if (col.items.length === 0) {
+      bodyEl.innerHTML = `<div class="preview-empty-tab">Keine Felder in diesem Tab.</div>`;
+    } else {
+      const [left, right] = splitIntoTwoCols(col.items);
+      const grid = document.createElement('div');
+      grid.className = 'preview-two-col';
+
+      const colLeft = document.createElement('div');
+      left.forEach(el => colLeft.appendChild(renderPreviewField(el)));
+
+      const colRight = document.createElement('div');
+      right.forEach(el => colRight.appendChild(renderPreviewField(el)));
+
+      grid.appendChild(colLeft);
+      grid.appendChild(colRight);
+      bodyEl.appendChild(grid);
+    }
+    bodiesDiv.appendChild(bodyEl);
+  });
+}
+
+function switchPreviewTab(idx) {
+  document.querySelectorAll('.preview-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+  document.querySelectorAll('.preview-tab-body').forEach((b, i) => b.classList.toggle('active', i === idx));
+}
+
+function renderPreviewField(el) {
+  const wrap = document.createElement('div');
+  wrap.className = 'preview-field';
+
+  const label = document.createElement('div');
+  label.className = 'preview-label';
+  label.textContent = el.label;
+  wrap.appendChild(label);
+
+  const ctrl = document.createElement('div');
+
+  if (el.type === 'select' || el.type === 'date') {
+    const exValues = {
+      semester: 'Semester 2 (2025-2026) (Aktuell)',
+      klasse: 'OS3 1 Schule Testdorf',
+      datum: '20.07.2026',
+      fach: 'Allgemein',
+    };
+    const ex = exValues[el.id];
+    const d = document.createElement('div');
+    d.className = 'preview-input-mock select' + (ex ? ' filled' : '');
+    d.textContent = ex || 'Bitte wählen';
+    ctrl.appendChild(d);
+  } else if (el.type === 'radio') {
+    const d = document.createElement('div');
+    d.className = 'preview-radio-group';
+    const opts = el.id === 'status'
+      ? [['Nicht erledigt', true], ['Erledigt', false]]
+      : [['Niedrig', false], ['Mittel', false], ['Hoch', false]];
+    opts.forEach(([lbl, checked]) => {
+      d.innerHTML += `<div class="preview-radio"><div class="preview-radio-dot ${checked ? 'checked' : ''}"></div>${lbl}</div>`;
+    });
+    ctrl.appendChild(d);
+  } else if (el.type === 'checkbox') {
+    const d = document.createElement('div');
+    d.className = 'preview-checkboxes';
+    d.innerHTML = `
+      <div class="preview-checkbox"><div class="preview-checkbox-box">✓</div>Schulleitung</div>
+      <div class="preview-checkbox"><div class="preview-checkbox-box">✓</div>Klassenteam</div>
+      <div class="preview-checkbox"><div class="preview-checkbox-box unchecked"></div>Ausgewählte Lehrpersonen</div>
+      <div class="preview-checkbox"><div class="preview-checkbox-box unchecked"></div>Elternportal</div>
+    `;
+    ctrl.appendChild(d);
+  } else if (el.type === 'file') {
+    const d = document.createElement('div');
+    d.className = 'preview-file-area';
+    d.textContent = 'Dateien hierher ziehen…';
+    ctrl.appendChild(d);
+  } else if (el.type === 'textarea') {
+    const d = document.createElement('div');
+    d.className = 'preview-textarea-mock';
+    d.textContent = 'Hier tippen';
+    ctrl.appendChild(d);
+  }
+
+  wrap.appendChild(ctrl);
+  return wrap;
+}
+
+function buildSummary() {
+  const box = document.getElementById('summary-box');
+  box.innerHTML = `<div class="summary-title">Deine Tab-Konfiguration</div><div class="summary-tabs" id="summary-tabs"></div>`;
+  const cont = document.getElementById('summary-tabs');
+  columns.forEach(col => {
+    const row = document.createElement('div');
+    row.className = 'summary-tab-row';
+    const nameLbl = document.createElement('div');
+    nameLbl.className = 'summary-tab-name';
+    nameLbl.textContent = col.name;
+    row.appendChild(nameLbl);
+    const chips = document.createElement('div');
+    chips.className = 'summary-chips';
+    if (col.items.length === 0) {
+      chips.innerHTML = '<span style="font-size:11px;color:var(--gray-400)">Keine Felder</span>';
+    } else {
+      col.items.forEach(id => {
+        const el = ELEMENTS.find(e => e.id === id);
+        if (!el) return;
+        const ch = document.createElement('span');
+        ch.className = 'summary-chip';
+        ch.textContent = el.label;
+        chips.appendChild(ch);
+      });
+    }
+    row.appendChild(chips);
+    cont.appendChild(row);
+  });
+}
+
+function goToStep(n) {
+  document.querySelectorAll('.step-page').forEach((p, i) => p.classList.toggle('active', i + 1 === n));
+  [1,2,3,4].forEach(i => {
+    const ind = document.getElementById('step-ind-' + i);
+    if (ind) {
+      ind.classList.toggle('active', i === n);
+      ind.classList.toggle('done', i < n);
+    }
+  });
+  if (n === 4) buildSummary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function submitForm() {
+  const name    = document.getElementById('f-name').value.trim();
+  const email   = document.getElementById('f-email').value.trim();
+  if (!name || !email) {
+    alert('Bitte gib mindestens Name und E-Mail an.');
+    return;
+  }
+  const school  = document.getElementById('f-school').value.trim();
+  const role    = document.getElementById('f-role').value.trim();
+  const comment = document.getElementById('f-comment').value.trim();
+
+  // Build tab names and fields (up to 8)
+  const tabNames  = Array(8).fill('');
+  const tabFields = Array(8).fill('');
+  columns.forEach((col, i) => {
+    if (i < 8) {
+      tabNames[i]  = col.name;
+      tabFields[i] = col.items.map(id => {
+        const el = ELEMENTS.find(e => e.id === id);
+        return el ? el.label : id;
+      }).join(', ');
+    }
+  });
+
+  const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfhOpWM3cdmgvpT8K1CgXnL2YJE9z3rNYSNbvqO4tsyyslL_A/formResponse';
+  const body = new URLSearchParams({
+    'entry.609902864':  name,
+    'entry.2143338699': email,
+    'entry.1058011671': school,
+    'entry.1062645251': role,
+    'entry.996802436':  comment,
+    'entry.565675222':  tabNames[0],
+    'entry.1036365245': tabNames[1],
+    'entry.1492417651': tabNames[2],
+    'entry.1802349105': tabNames[3],
+    'entry.244870422':  tabNames[4],
+    'entry.528989214':  tabNames[5],
+    'entry.1352674148': tabNames[6],
+    'entry.433008914':  tabNames[7],
+    'entry.1925951915': tabFields[0],
+    'entry.902377052':  tabFields[1],
+    'entry.1267374281': tabFields[2],
+    'entry.800442748':  tabFields[3],
+    'entry.787248602':  tabFields[4],
+    'entry.2062866505': tabFields[5],
+    'entry.1177360546': tabFields[6],
+    'entry.1165960591': tabFields[7],
+  });
+
+  // Send in background — no-cors means we get no confirmation back, but data arrives
+  fetch(formUrl, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  }).catch(() => {}); // silence network errors silently
+
+  document.getElementById('send-card').style.display = 'none';
+  document.getElementById('step3-nav').style.display = 'none';
+  document.getElementById('success-panel').style.display = 'block';
+}
+
+// Render immediately — don't wait for icon font
+renderAll();
+// Then reload once font is ready so icons render correctly
+document.fonts.ready.then(() => renderAll());
+</script>
+</body>
+</html>
